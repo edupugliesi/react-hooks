@@ -6,10 +6,58 @@ import * as React from 'react'
 // fetchPokemon: the function we call to get the pokemon info
 // PokemonInfoFallback: the thing we show while we're loading the pokemon info
 // PokemonDataView: the stuff we use to display the pokemon info
-import {PokemonForm} from '../pokemon'
+import {PokemonForm, fetchPokemon, PokemonInfoFallback, PokemonDataView} from '../pokemon'
 
 function PokemonInfo({pokemonName}) {
   // 🐨 Have state for the pokemon (null)
+  const [pokemon, setPokemon] = React.useState(null)
+  const [error, setError] = React.useState(null)
+  const [status, setStatus] = React.useState('idle') // Ocioso
+
+  React.useEffect(() => {
+    if(! pokemonName) return // Nome vazio, retorna sem fazer nada
+
+    // Resetar o estado do pokemon
+    setPokemon(null)
+    setError(null)
+
+    /*
+    // Essa abordagem não funciona poique o JS trabalha de forma assíncrona
+    const pokemonData = fetchPokemon(pokemonName) // Chamada da API
+    setPokemon(pokemonName)
+    */
+
+    //Callback é uma função que será executada pela função assíncrona assim que ela
+    //tiver terminado de fazer sua tarefa
+
+    // Tecnicamente, uma função assíncrona retorna um objeto do tipo Promise (Promessa).
+    // Uma Promisse, suporta dois callbacks, um para quando a execução assincrona da certa
+    // e outro para o caso de erro.
+    /*
+    fetchPokemon(pokemonName)
+        .then( // Callback para quando dá certo ("Do bem")
+            pokemonData => setPokemon(pokemonData)
+        )
+        .catch( // Callback para quando dá errado ("Do mal")
+            erro => alert(erro.message)
+        )
+    */
+   
+    async function getPokemonFromServer(){
+        try {
+            setStatus('pending')
+            const pokemonData = await fetchPokemon(pokemonName)
+            setPokemon(pokemonData)
+            setStatus('resolved')
+        }
+        catch(erro) { // Em caso de erro, caímos do bloco Catch()
+            setError(erro)
+            setStatus('rejected')
+        }
+    }
+    // Chamada da função assíncrona
+    getPokemonFromServer()
+  }, [pokemonName])
   // 🐨 use React.useEffect where the callback should be called whenever the
   // pokemon name changes.
   // 💰 DON'T FORGET THE DEPENDENCIES ARRAY!
@@ -24,8 +72,24 @@ function PokemonInfo({pokemonName}) {
   //   2. pokemonName but no pokemon: <PokemonInfoFallback name={pokemonName} />
   //   3. pokemon: <PokemonDataView pokemon={pokemon} />
 
-  // 💣 remove this
-  return 'TODO'
+  switch(status){
+        case 'idle':
+            return 'Submit a pokemon'
+        case 'rejected':
+            return(
+                <div role="alert">
+                    There was an error: <pre style={{whiteSpace: 'normal'}}>{error.message}</pre>
+                </div>
+            )
+        case 'pending':
+            return <PokemonInfoFallback name ={pokemonName} />
+        case 'resolved':
+            return <PokemonDataView pokemon={pokemon} />
+
+
+  }
+
+  
 }
 
 function App() {
